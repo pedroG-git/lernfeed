@@ -48,7 +48,14 @@ header {
   background: var(--bg);
   border-bottom: 1px solid var(--line);
 }
-header h1 { font-size: 20px; margin: 0; flex: 1; }
+header h1 { font-size: 20px; margin: 0; flex: 1; white-space: nowrap; }
+header h1 small { font-size: 12px; font-weight: 500; color: var(--muted); margin-left: 4px; }
+.icon { position: relative; }
+.badge {
+  position: absolute; top: 0; right: -2px; min-width: 17px; height: 17px; padding: 0 4px;
+  border-radius: 999px; background: var(--bad); color: #fff; font-size: 11px; line-height: 17px; text-align: center;
+}
+.badge[hidden] { display: none; }
 header select {
   max-width: 45vw;
   padding: 6px 10px; border-radius: 999px;
@@ -80,8 +87,14 @@ main { max-width: 680px; margin: 0 auto; padding: 8px 10px 40px; }
 .card p { margin: 0 0 10px; }
 .card ul, .card ol { margin: 0 0 10px; padding-left: 22px; }
 .card li { margin: 2px 0; }
-.card img { display: block; width: 100%; max-height: 60vh; object-fit: contain; background: #fff; }
-.caption { font-size: 13px; color: var(--muted); padding: 4px 16px 0; }
+figure { margin: 0; }
+figure img { display: block; width: 100%; max-height: 55vh; object-fit: contain; background: #fff; }
+figcaption { font-size: 14px; color: var(--muted); padding: 6px 16px 2px; }
+.card.post { cursor: pointer; }
+.clamp { max-height: 9.5em; overflow: hidden; -webkit-mask-image: linear-gradient(#000 70%, transparent); mask-image: linear-gradient(#000 70%, transparent); }
+.hint { font-size: 14px; color: var(--accent); padding: 6px 4px; }
+.card .row { flex-wrap: nowrap; }
+.card .row .pill { padding: 7px 12px; white-space: nowrap; }
 .more-text { border-top: 1px solid var(--line); padding-top: 10px; margin-top: 4px; }
 .source { font-size: 12px; color: var(--muted); margin: 4px 0 8px; }
 
@@ -100,6 +113,9 @@ main { max-width: 680px; margin: 0 auto; padding: 8px 10px 40px; }
 .done.miss { color: var(--bad); }
 
 .card.quiz { background: var(--quiz); border-color: var(--quiz-line); }
+.question h3 { font-size: 18px; line-height: 1.35; margin: 4px 0 10px; }
+.question .options { padding: 0; margin-bottom: 10px; }
+.question .why { padding: 0 0 10px; }
 .quiz .label { font-size: 13px; font-weight: 600; color: var(--accent); margin-bottom: 4px; }
 .options { display: grid; gap: 8px; padding: 0 16px 12px; }
 .option {
@@ -135,3 +151,52 @@ main { max-width: 680px; margin: 0 auto; padding: 8px 10px 40px; }
 .sheet button:not(.text):not(.link):not(.primary):not(.danger) {
   border: 1px solid var(--line); background: var(--card); border-radius: 10px; padding: 8px 14px;
 }
+
+body.locked { overflow: hidden; }
+.page { padding: 0 0 40px; }
+.page > *:not(.page-head) { max-width: 680px; margin-left: auto; margin-right: auto; }
+.page-head {
+  position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 10px;
+  padding: calc(8px + env(safe-area-inset-top)) 12px 8px;
+  background: var(--bg); border-bottom: 1px solid var(--line);
+}
+.page-head .meta { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.back { font-size: 17px; }
+.page h1 { font-size: 23px; line-height: 1.25; margin-top: 16px; margin-bottom: 10px; padding: 0 16px; }
+.page > p { padding: 0 16px; }
+.thread { background: var(--card); border-bottom: 1px solid var(--line); padding-bottom: 4px; }
+.thread h1 { padding-top: 14px; margin-top: 0; }
+.thread figure { margin: 6px 0 4px; }
+.thread figure img { max-height: none; cursor: zoom-in; }
+.text-body { padding: 10px 16px 0; }
+.text-body p { margin: 0 0 12px; }
+.text-body ul, .text-body ol { margin: 0 0 12px; padding-left: 22px; }
+.thread .source { padding: 0 16px; }
+.tag { display: inline-block; margin: 0 0 8px 16px; font-size: 13px; padding: 2px 10px; border-radius: 999px; }
+.tag.learn { background: var(--bad-bg); color: var(--bad); }
+.tag.got { background: var(--ok-bg); color: var(--ok); }
+.thread-quiz, .related { padding: 6px 16px; }
+.thread-quiz h2, .related h2 { font-size: 15px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 18px 0 10px; }
+.thread-quiz .question { background: var(--quiz); border: 1px solid var(--quiz-line); border-radius: 12px; padding: 8px 14px 2px; margin-bottom: 10px; }
+.rel {
+  display: flex; gap: 12px; align-items: flex-start; width: 100%; text-align: left;
+  padding: 12px 14px; margin: 0 0 8px; background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+}
+.page > .rel { width: calc(100% - 32px); margin-left: 16px; margin-right: 16px; }
+.rel small { display: block; font-size: 13px; color: var(--muted); }
+.dot { flex: none; width: 10px; height: 10px; border-radius: 50%; margin-top: 7px; background: var(--accent); }
+.dot.got { background: var(--ok); }
+.dot.learn { background: var(--bad); }
+.dot.seen { background: var(--line); }
+.next { display: block; width: calc(100% - 32px); margin: 14px 16px 0; text-align: left; padding: 14px 16px; }
+.empty-list { color: var(--muted); padding: 30px 16px; text-align: center; }
+.viewer {
+  position: fixed; inset: 0; z-index: 20; background: #000; overflow: auto;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.viewer[hidden] { display: none; }
+.viewer img { width: 100%; height: auto; background: #fff; }
+.viewer img.zoom { width: 250%; max-width: none; }
+.viewer:has(img.zoom) { display: block; }
+.viewer .cap { color: #ddd; font-size: 14px; padding: 10px 16px; }
+.viewer .hint-zoom { color: #888; font-size: 12px; padding-bottom: 16px; }

@@ -24,7 +24,8 @@ p = Mix.rate(p, false, now);
 assert.strictEqual(p.box, 0);
 assert.strictEqual(p.due, now + 10 * MIN);
 assert.strictEqual(Mix.level(p), 'normal');
-assert.strictEqual(Mix.level(undefined), 'einfach');
+assert.strictEqual(Mix.level(undefined), 'normal');
+assert.strictEqual(Mix.level({ lvl: 'einfach' }), 'einfach');
 
 // 3. With seen posts: a question after every 5 posts, and due reviews come in.
 const progress = {};

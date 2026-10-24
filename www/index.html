@@ -11,8 +11,12 @@
 </head>
 <body>
   <header id="top">
-    <h1>Lernfeed</h1>
+    <h1 id="title">Lernfeed <small id="today"></small></h1>
     <select id="klasse" aria-label="Klasse"><option value="">Alle Klassen</option></select>
+    <button id="openList" class="icon" aria-label="Lernliste">
+      <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1Zm1 2v12.6l5-2.9 5 2.9V5H7Z"/></svg>
+      <span id="badge" class="badge" hidden></span>
+    </button>
     <button id="openSettings" class="icon" aria-label="Einstellungen">
       <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M19.4 13a7.7 7.7 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.6 7.6 0 0 0-1.7-1L15 3.3h-4l-.4 2.6a7.6 7.6 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.7 7.7 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1c.5.4 1.1.7 1.7 1l.4 2.6h4l.4-2.6c.6-.3 1.2-.6 1.7-1l2.5 1 2-3.5L19.4 13ZM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z" transform="translate(-1 0)"/></svg>
     </button>
@@ -32,6 +36,10 @@
     <p>Öffne die Einstellungen, füge den GitHub-Token ein und tippe auf <b>Inhalte laden</b>.</p>
     <button id="emptySettings" class="primary">Einstellungen</button>
   </div>
+
+  <section id="page" class="sheet page" hidden></section>
+  <section id="list" class="sheet page" hidden></section>
+  <div id="viewer" class="viewer" hidden></div>
 
   <section id="settings" class="sheet" hidden>
     <div class="sheet-head">

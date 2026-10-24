@@ -1,15 +1,15 @@
 // The "smart mix": decides which post comes next.
 // Pure functions (no DOM, no storage) so tools/test-mix.js can run them in node.
 //
-// Per post progress: { n: times seen, ok: times "Verstanden", box: 0-5, due: ms, last: ms }
+// Per post progress: { n: times seen, ok: times "Kann ich", box: 0-5, due: ms, last: ms }
 // - unseen posts come in class order (newest LE first, inside an LE in the order they were written)
-// - "Verstanden" pushes the post further away (1, 3, 7, 16, 35 days), "Nicht verstanden" brings it back soon
+// - "Kann ich" pushes the post further away (1, 3, 7, 16, 35 days), "Noch lernen" brings it back soon
 // - scrolled past without a tap = seen, comes back tomorrow
 // - every few posts a short question about something already seen
 (function (root) {
   const MIN = 60 * 1000, DAY = 24 * 60 * MIN;
   const INTERVALS = [1, 3, 7, 16, 35]; // days, by box
-  const SOON = 10 * MIN;               // "Nicht verstanden"
+  const SOON = 10 * MIN;               // "Noch lernen"
   const QUIZ_EVERY = 5;                 // one question after every 5 posts
   const REVIEW_EVERY = 3;               // every 3rd post is a due review when there is one
 
@@ -36,9 +36,9 @@
     return p;
   }
 
-  // Simple German until the post was understood once, then the normal version (if there is one).
+  // Normal German by default; the post page can switch a single post to simple German (remembered).
   function level(p) {
-    return p && p.ok > 0 ? 'normal' : 'einfach';
+    return (p && p.lvl) || 'normal';
   }
 
   // Unseen posts: newest lesson first, inside a lesson in authored order.
