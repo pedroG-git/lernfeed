@@ -54,14 +54,27 @@
       .map((o) => o.x);
   }
 
+  // a a b a a b … (n of a, then one of b), the rest appended.
+  function interleave(a, b, n) {
+    const out = [];
+    while (a.length || b.length) {
+      out.push(...a.splice(0, n));
+      if (b.length) out.push(b.shift());
+    }
+    return out;
+  }
+
   // Builds the next `count` feed items. `shown` = post ids already in this session (not repeated unless due).
   // Items: { type: 'post', post } or { type: 'quiz', post, q, qi }
   function next(posts, progress, opts) {
-    const { now, count = 15, shown = new Set(), klasse = '', quizLog = {}, sinceQuiz = 0 } = opts;
-    const pool = klasse ? posts.filter((x) => x.klasse === klasse) : posts;
+    const { now, count = 15, shown = new Set(), klasse = '', exam = null, quizLog = {}, sinceQuiz = 0 } = opts;
+    // Exam mode: its flashcards plus the posts of its lesson. Otherwise flashcards stay out of the feed.
+    const pool = exam ? posts.filter((x) => x.pruefung === exam.name || (!x.typ && x.klasse === exam.klasse && x.le === exam.le))
+      : posts.filter((x) => !x.typ && (!klasse || x.klasse === klasse));
     const prog = (x) => progress[x.id];
 
-    const fresh = freshOrder(pool.filter((x) => !prog(x) && !shown.has(x.id)));
+    let fresh = freshOrder(pool.filter((x) => !prog(x) && !shown.has(x.id)));
+    if (exam) fresh = interleave(fresh.filter((x) => x.typ), fresh.filter((x) => !x.typ), 2);
     const due = pool
       .filter((x) => prog(x) && prog(x).due <= now && !shown.has(x.id))
       .sort((a, b) => prog(a).due - prog(b).due);

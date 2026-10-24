@@ -48,4 +48,13 @@ const log = Object.fromEntries(posts.map((x) => [x.id + '#0', { right: 1, wrong:
 r = Mix.next(posts, progress, { now, count: 30, quizLog: log });
 assert(r.items.every((i) => i.type === 'post'));
 
+// 6. Exam mode: its flashcards (2) then one lesson post; flashcards never in the normal feed.
+const exam = { name: 'LEK', klasse: 'CE 02 B', le: 'LE 3' };
+const all = posts.concat(Array.from({ length: 6 }, (_, i) => ({ id: 'lek-' + i, typ: 'karte', pruefung: 'LEK', klasse: 'CE 02 B', le: 'LE 3', titel: 'f', antwort: 'a' })));
+r = Mix.next(all, {}, { now, count: 9, exam });
+assert.deepStrictEqual(r.items.map((i) => (i.post.typ ? 'k' : 'p')).join(''), 'kkpkkpkkp');
+assert(r.items.every((i) => i.post.le === 'LE 3' && i.post.klasse === 'CE 02 B'));
+r = Mix.next(all, {}, { now, count: 50 });
+assert(r.items.every((i) => !i.post.typ));
+
 console.log('mix ok');

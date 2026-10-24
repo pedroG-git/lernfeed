@@ -205,3 +205,14 @@ body.locked { overflow: hidden; }
 @keyframes spin { to { transform: rotate(360deg); } }
 #statsText { width: 100%; height: 160px; margin: 8px 0; font: 12px/1.4 ui-monospace, monospace; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--text); padding: 8px; }
 #statsText[hidden] { display: none; }
+
+.exam { max-width: 660px; margin: 10px auto 0; padding: 10px 14px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; font-size: 15px; }
+@media (max-width: 690px) { .exam { margin: 10px 10px 0; } }
+.exam[hidden] { display: none; }
+.exam .bar { height: 6px; border-radius: 3px; background: var(--line); margin: 8px 0 4px; overflow: hidden; }
+.exam .bar span { display: block; height: 100%; background: var(--ok); transition: width .3s; }
+.card.karte h2 { margin-bottom: 4px; }
+.answer { border-top: 1px solid var(--line); margin-top: 10px; padding-top: 10px; }
+.answer p { margin: 0 0 8px; }
+.card .row .show { padding: 8px 18px; }
+.answer-h { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 6px; }

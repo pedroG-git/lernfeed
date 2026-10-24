@@ -63,7 +63,7 @@
   }
 
   // ---------- rating ----------
-  const meta = (p) => [p.klasse, p.le, p.thema].filter(Boolean).map(esc).join(' · ');
+  const meta = (p) => (p.typ === 'karte' ? ['📝 ' + p.pruefung, p.thema] : [p.klasse, p.le, p.thema]).filter(Boolean).map(esc).join(' · ');
   const state = (id) => {
     const g = progress[id];
     return !g ? 'new' : g.learn ? 'learn' : g.ok > 0 ? 'got' : 'seen';
@@ -79,6 +79,7 @@
     saveSoon();
     refreshCards(id, got);
     updateBadge();
+    examBar();
   }
 
   function rateButtons(id, justRated) {
@@ -136,6 +137,51 @@
     draw();
     return el;
   }
+
+  // Test preparation: question first, the answer after a tap, then rate it.
+  function karteCard(p) {
+    const el = document.createElement('article');
+    el.className = 'card karte';
+    el.dataset.id = p.id;
+    let rated = '', open = false;
+    const draw = () => {
+      el.innerHTML = `
+        <div class="body">
+          <div class="meta">${meta(p)}</div>
+          <h2>${inline(p.titel)}</h2>
+          ${open ? `<div class="answer">${md(p.antwort)}</div>` : ''}
+        </div>
+        <div class="row">
+          ${open ? `<span class="spacer"></span>${rateButtons(p.id, rated)}` : '<button class="primary show" data-a="show">Antwort zeigen</button>'}
+        </div>`;
+    };
+    el.refresh = (got) => {
+      if (got !== undefined) { rated = got ? 'got' : 'miss'; open = true; }
+      draw();
+    };
+    el.addEventListener('click', (e) => {
+      const a = e.target.closest('[data-a]')?.dataset.a;
+      if (a === 'show') {
+        open = true;
+        const g = Mix.seen(progress[p.id], Date.now());
+        if (el.dataset.seen) g.n--;
+        g.o = (g.o || 0) + 1;
+        progress[p.id] = g;
+        el.dataset.seen = 1;
+        saveSoon();
+        return draw();
+      }
+      if (a === 'got' || a === 'miss') {
+        rated = a;
+        el.dataset.seen = 1;
+        rate(p.id, a === 'got');
+        if (a === 'miss') showAgain(el, p);
+      }
+    });
+    draw();
+    return el;
+  }
+  const card = (p) => (p.typ === 'karte' ? karteCard(p) : postCard(p));
 
   // One question; used in the feed and on the post page.
   function question(p, q, qi) {
@@ -198,14 +244,14 @@
   function showAgain(fromEl, p) {
     let at = fromEl;
     for (let i = 0; i < 5 && at; i++) at = at.nextElementSibling;
-    if (at) at.after(postCard(p));
+    if (at) at.after(card(p));
     else session.again.push(p);
   }
 
   // ---------- post page (opens like a Reddit thread) ----------
   // Order inside a lesson, used for "Weiter" and the related list.
   function lessonPosts(p) {
-    return posts.filter((x) => x.klasse === p.klasse && x.le === p.le);
+    return posts.filter((x) => x.klasse === p.klasse && x.le === p.le && x.pruefung === p.pruefung);
   }
 
   function postPage(p) {
@@ -231,7 +277,7 @@
           <h1>${inline(p.titel)}</h1>
           ${s === 'learn' ? '<div class="tag learn">★ Auf deiner Lernliste</div>' : s === 'got' ? '<div class="tag got">✓ Kann ich</div>' : ''}
           ${figure(p)}
-          <div class="text-body">${md(pick(p.kurz, lvl))}${more ? md(more) : ''}</div>
+          <div class="text-body">${p.typ === 'karte' ? `<div class="answer-h">Antwort</div>${md(p.antwort)}` : md(pick(p.kurz, lvl)) + (more ? md(more) : '')}</div>
           ${p.quelle ? `<div class="source">Quelle: ${esc(p.quelle)}</div>` : ''}
           <div class="row">
             ${hasBoth(p) ? `<button class="text" data-a="lvl">${lvl === 'einfach' ? 'Normale Sprache' : 'Einfache Sprache'}</button>` : ''}
@@ -240,11 +286,11 @@
           </div>
         </article>
         ${(p.fragen || []).length ? '<section class="thread-quiz"><h2>Teste dich</h2><div class="qs"></div></section>' : ''}
-        ${related.length ? `<section class="related"><h2>Mehr aus ${esc(p.le || p.klasse)}</h2>
+        ${related.length ? `<section class="related"><h2>Mehr aus ${esc(p.pruefung || p.le || p.klasse)}</h2>
           ${related.map((x) => `<button class="rel" data-open="${esc(x.id)}">
             <span class="dot ${state(x.id)}"></span><span>${inline(x.titel)}<small>${esc(x.thema || '')}</small></span></button>`).join('')}
         </section>` : ''}
-        ${next && next !== p ? `<button class="primary next" data-open="${esc(next.id)}">Nächster Beitrag: ${inline(next.titel)} ›</button>` : ''}`;
+        ${next && next !== p ? `<button class="primary next" data-open="${esc(next.id)}">${p.typ === 'karte' ? 'Nächste Karte' : 'Nächster Beitrag'}: ${inline(next.titel)} ›</button>` : ''}`;
       const qs = page.querySelector('.qs');
       if (qs) p.fragen.forEach((q, qi) => qs.appendChild(question(p, q, qi)));
       loadImgs(page);
@@ -401,16 +447,17 @@
   function loadMore() {
     const add = [];
     while (session.again.length) add.push({ type: 'post', post: session.again.shift() });
-    let res = Mix.next(posts, progress, { now: Date.now(), count: 15, shown: session.shown, klasse: settings.klasse, quizLog, sinceQuiz: session.sinceQuiz });
+    const opts = () => ({ now: Date.now(), count: 15, shown: session.shown, klasse: settings.klasse, exam: currentExam(), quizLog, sinceQuiz: session.sinceQuiz });
+    let res = Mix.next(posts, progress, opts());
     if (!res.items.length && session.shown.size) {
       // Everything was shown in this session: start a new round.
       session.shown = new Set();
-      res = Mix.next(posts, progress, { now: Date.now(), count: 15, shown: session.shown, klasse: settings.klasse, quizLog, sinceQuiz: session.sinceQuiz });
+      res = Mix.next(posts, progress, opts());
     }
     session.sinceQuiz = res.sinceQuiz;
     add.push(...res.items);
     for (const it of add) {
-      const el = it.type === 'quiz' ? quizCard(it) : postCard(it.post);
+      const el = it.type === 'quiz' ? quizCard(it) : card(it.post);
       feedEl.appendChild(el);
       if (it.type === 'post') {
         session.shown.add(it.post.id);
@@ -425,19 +472,45 @@
     session = { shown: new Set(), sinceQuiz: 0, again: [] };
     const has = posts.length > 0;
     $('empty').hidden = has;
+    examBar();
     if (has) { loadMore(); scrollTo(0, 0); }
     else $('more').hidden = true;
   }
 
   new IntersectionObserver((e) => { if (e[0].isIntersecting && posts.length) loadMore(); }, { rootMargin: '800px' }).observe($('more'));
 
+  // ---------- test preparation ----------
+  // Filter value "@<name>" = exam mode. Exams show up in the filter until the day of the test.
+  let exams = [];
+  const today = () => new Date().toLocaleDateString('sv-SE');
+  const daysTo = (d) => Math.round((new Date(d + 'T12:00') - new Date(today() + 'T12:00')) / 864e5);
+  const currentExam = () => (settings.klasse.startsWith('@') && exams.find((x) => '@' + x.name === settings.klasse)) || null;
+  function examBar() {
+    const bar = $('exam');
+    const x = currentExam();
+    bar.hidden = !x;
+    if (!x) return;
+    const cards = posts.filter((p) => p.pruefung === x.name);
+    const got = cards.filter((p) => state(p.id) === 'got').length;
+    const learn = cards.filter((p) => state(p.id) === 'learn').length;
+    const d = daysTo(x.datum);
+    const when = d === 0 ? 'heute' : d === 1 ? 'morgen' : `in ${d} Tagen`;
+    const date = new Date(x.datum + 'T12:00').toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' });
+    bar.innerHTML = `<div><b>${esc(x.name)}</b> · ${date} · ${when}</div>
+      <div class="bar"><span style="width:${(100 * got) / cards.length}%"></span></div>
+      <div class="small muted">${got} von ${cards.length} Karten kann ich${learn ? ` · ${learn} noch lernen` : ''}</div>`;
+  }
+
   function useFeed(feed) {
     posts = (feed && feed.posts) || [];
     byId = Object.fromEntries(posts.map((p) => [p.id, p]));
+    exams = ((feed && feed.pruefungen) || []).filter((x) => daysTo(x.datum) >= 0).sort((a, b) => (a.datum < b.datum ? -1 : 1));
     const sel = $('klasse');
     const classes = [...new Set(posts.map((p) => p.klasse))].sort();
-    sel.innerHTML = '<option value="">Alle</option>' + classes.map((k) => `<option>${esc(k)}</option>`).join('');
-    if (!classes.includes(settings.klasse)) settings.klasse = '';
+    sel.innerHTML = '<option value="">Alle</option>'
+      + exams.map((x) => `<option value="@${esc(x.name)}">📝 ${esc(x.name)}</option>`).join('')
+      + classes.map((k) => `<option>${esc(k)}</option>`).join('');
+    if (!classes.includes(settings.klasse) && !currentExam()) settings.klasse = '';
     sel.value = settings.klasse;
     updateBadge();
   }
@@ -523,7 +596,7 @@
     const unseen = posts.filter((p) => !progress[p.id]).length;
     return [
       `LERNFEED-STATISTIK v${current} · ${fmt(Date.now())}`,
-      `Beiträge ${posts.length} · nie gesehen ${unseen} · Lernliste ${learnList().length} · Filter ${settings.klasse || 'alle'}`,
+      `Beiträge ${posts.length} (davon Karten ${posts.filter((p) => p.typ).length}) · nie gesehen ${unseen} · Lernliste ${learnList().length} · Filter ${settings.klasse || 'alle'}`,
       '', '# Sitzungen (Start;Dauer;Beiträge)', ...sess,
       '', '# Beiträge (id;im Feed;geöffnet;Sek. gelesen;Kann ich;Noch lernen;auf Lernliste;einfach)', ...rows,
       '', '# Fragen (post#nr;richtig;falsch)', ...quiz,
