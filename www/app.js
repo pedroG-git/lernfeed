@@ -73,7 +73,7 @@
   function rate(id, got) {
     const g = Mix.rate(Mix.seen(progress[id], Date.now()), got, Date.now());
     g.learn = !got;
-    if (!got) g.marked = Date.now();
+    if (!got) { g.marked = Date.now(); g.miss = (g.miss || 0) + 1; }
     progress[id] = g;
     countToday();
     saveSoon();
@@ -272,8 +272,15 @@
         rate(p.id, a === 'got');
       }
     };
-    // Opening a post counts as seen.
-    if (!progress[p.id]) { progress[p.id] = Mix.seen(progress[p.id], Date.now()); countToday(); saveSoon(); refreshCards(p.id); }
+    // Opening a post counts as seen; opens and reading time go into the stats.
+    const first = !progress[p.id];
+    const g = Mix.seen(progress[p.id], Date.now());
+    if (!first) g.n--;
+    g.o = (g.o || 0) + 1;
+    progress[p.id] = g;
+    reading = { id: p.id, since: Date.now() };
+    if (first) { countToday(); refreshCards(p.id); }
+    saveSoon();
     draw();
     page.scrollTop = 0;
   }
@@ -309,8 +316,18 @@
   // ---------- views + Android back button ----------
   // Every page (post, Lernliste, image, settings) is a history entry, so the phone's back button closes it.
   const overlays = ['page', 'list', 'viewer', 'settings'];
+  let reading = null; // post page currently open, for reading time
+  let resumeId = null; // post page that was open when the app went to the background
+  function stopReading() {
+    if (!reading) return;
+    const g = progress[reading.id];
+    if (g) g.t = (g.t || 0) + Math.min(Date.now() - reading.since, 10 * 60 * 1000);
+    reading = null;
+    saveSoon();
+  }
   function render(st) {
     const v = st && st.v;
+    if (v !== 'img') stopReading();
     for (const id of overlays) $(id).hidden = true;
     document.body.classList.toggle('locked', !!v);
     if (v === 'post' && byId[st.id]) { postPage(byId[st.id]); $('page').hidden = false; }
@@ -351,7 +368,9 @@
     seenObs.unobserve(el);
     if (el.dataset.seen) return;
     el.dataset.seen = 1;
-    progress[el.dataset.id] = Mix.seen(progress[el.dataset.id], Date.now());
+    const g = Mix.seen(progress[el.dataset.id], Date.now());
+    g.f = (g.f || 0) + 1;
+    progress[el.dataset.id] = g;
     countToday();
     saveSoon();
   }
@@ -359,9 +378,19 @@
   // Posts read today, shown small in the header.
   function countToday() {
     const d = new Date().toLocaleDateString('de-DE');
-    if (stats.day !== d) stats = { day: d, n: 0 };
+    if (stats.day !== d) { stats.day = d; stats.n = 0; }
     stats.n++;
+    touchSession(1);
     showToday();
+  }
+  // Usage sessions (app in the foreground), last 100 kept for the stats.
+  function touchSession(posts) {
+    const now = Date.now();
+    const list = (stats.sessions ||= []);
+    let cur = list[list.length - 1];
+    if (!cur || now - cur.e > 5 * 60 * 1000) { cur = { s: now, e: now, n: 0 }; list.push(cur); if (list.length > 100) list.shift(); }
+    cur.e = now;
+    cur.n += posts;
   }
   function showToday() {
     const d = new Date().toLocaleDateString('de-DE');
@@ -481,6 +510,38 @@
     showSettingsInfo();
     doSync(true);
   });
+  // ---------- stats for Claude ----------
+  // A compact report to paste into the chat: what gets opened, skipped, marked and answered wrong.
+  function report() {
+    const fmt = (ms) => new Date(ms).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    const rows = posts.filter((p) => progress[p.id]).map((p) => {
+      const g = progress[p.id];
+      return [p.id, g.f || 0, g.o || 0, Math.round((g.t || 0) / 1000), g.ok || 0, g.miss || 0, g.learn ? 1 : 0, g.lvl === 'einfach' ? 'e' : ''].join(';');
+    });
+    const quiz = Object.entries(quizLog).map(([k, l]) => `${k};${l.right};${l.wrong}`);
+    const sess = (stats.sessions || []).slice(-40).map((x) => `${fmt(x.s)};${Math.max(1, Math.round((x.e - x.s) / 60000))}min;${x.n}`);
+    const unseen = posts.filter((p) => !progress[p.id]).length;
+    return [
+      `LERNFEED-STATISTIK v${current} · ${fmt(Date.now())}`,
+      `Beiträge ${posts.length} · nie gesehen ${unseen} · Lernliste ${learnList().length} · Filter ${settings.klasse || 'alle'}`,
+      '', '# Sitzungen (Start;Dauer;Beiträge)', ...sess,
+      '', '# Beiträge (id;im Feed;geöffnet;Sek. gelesen;Kann ich;Noch lernen;auf Lernliste;einfach)', ...rows,
+      '', '# Fragen (post#nr;richtig;falsch)', ...quiz,
+    ].join('\n');
+  }
+  $('copyStats').addEventListener('click', async () => {
+    const text = report();
+    $('statsText').value = text;
+    $('statsText').hidden = false;
+    try {
+      await navigator.clipboard.writeText(text);
+      $('copyStats').textContent = 'Kopiert ✓ – jetzt in den Chat einfügen';
+    } catch {
+      $('statsText').select();
+      $('copyStats').textContent = 'Text unten markieren und kopieren';
+    }
+  });
+
   $('reset').addEventListener('click', () => ($('resetConfirm').hidden = false));
   $('resetNo').addEventListener('click', () => ($('resetConfirm').hidden = true));
   $('resetYes').addEventListener('click', () => {
@@ -543,7 +604,14 @@
     if (!s || Date.now() - s.at > 3 * 3600 * 1000) doSync(false);
   })();
   document.addEventListener('visibilitychange', async () => {
-    if (document.visibilityState !== 'visible') return;
+    if (document.visibilityState !== 'visible') {
+      if (reading) { resumeId = reading.id; stopReading(); }
+      saveNow();
+      return;
+    }
+    touchSession(0);
+    if (resumeId && !$('page').hidden) reading = { id: resumeId, since: Date.now() };
+    resumeId = null;
     const s = await Store.get('sync');
     if (s && Date.now() - s.at > 3 * 3600 * 1000) doSync(false);
   });

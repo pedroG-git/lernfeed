@@ -203,3 +203,5 @@ body.locked { overflow: hidden; }
 
 .spin svg { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+#statsText { width: 100%; height: 160px; margin: 8px 0; font: 12px/1.4 ui-monospace, monospace; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--text); padding: 8px; }
+#statsText[hidden] { display: none; }
