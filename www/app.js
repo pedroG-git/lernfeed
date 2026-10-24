@@ -485,18 +485,34 @@
   const today = () => new Date().toLocaleDateString('sv-SE');
   const daysTo = (d) => Math.round((new Date(d + 'T12:00') - new Date(today() + 'T12:00')) / 864e5);
   const currentExam = () => (settings.klasse.startsWith('@') && exams.find((x) => '@' + x.name === settings.klasse)) || null;
+  const when = (x) => {
+    const d = daysTo(x.datum);
+    const date = new Date(x.datum + 'T12:00').toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' });
+    return `${date} · ${d === 0 ? 'heute' : d === 1 ? 'morgen' : `in ${d} Tagen`}`;
+  };
+  function useExam(name) {
+    settings.klasse = '@' + name;
+    $('klasse').value = settings.klasse;
+    Store.set('settings', settings);
+    restart();
+  }
   function examBar() {
     const bar = $('exam');
     const x = currentExam();
-    bar.hidden = !x;
+    // Outside exam mode: a hint for the next test in the coming 2 weeks.
+    const soon = !x && exams.find((e) => daysTo(e.datum) <= 14);
+    bar.hidden = !x && !soon;
+    if (soon) {
+      bar.innerHTML = `<div class="exam-soon"><span>📝 <b>${esc(soon.name)}</b><br><span class="small muted">${when(soon)}</span></span>
+        <button class="primary">Üben</button></div>`;
+      bar.querySelector('button').onclick = () => useExam(soon.name);
+      return;
+    }
     if (!x) return;
     const cards = posts.filter((p) => p.pruefung === x.name);
     const got = cards.filter((p) => state(p.id) === 'got').length;
     const learn = cards.filter((p) => state(p.id) === 'learn').length;
-    const d = daysTo(x.datum);
-    const when = d === 0 ? 'heute' : d === 1 ? 'morgen' : `in ${d} Tagen`;
-    const date = new Date(x.datum + 'T12:00').toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' });
-    bar.innerHTML = `<div><b>${esc(x.name)}</b> · ${date} · ${when}</div>
+    bar.innerHTML = `<div><b>${esc(x.name)}</b> · ${when(x)}</div>
       <div class="bar"><span style="width:${(100 * got) / cards.length}%"></span></div>
       <div class="small muted">${got} von ${cards.length} Karten kann ich${learn ? ` · ${learn} noch lernen` : ''}</div>`;
   }
@@ -653,11 +669,14 @@
   // Opens the APK download in the phone's browser; Android then offers to install it.
   const APK = 'https://github.com/pedroG-git/lernfeed/releases/latest/download/lernfeed.apk';
   $('updateBtn').addEventListener('click', () => (location.href = APK));
-  // Header button: new content + new app version in one tap.
+  // Header button: new content + new app version + a new mix in one tap.
   $('refresh').addEventListener('click', async () => {
     $('refresh').classList.add('spin');
     await Promise.all([doSync(true), checkUpdate(false)]);
     $('refresh').classList.remove('spin');
+    // A fresh mix: what needs learning first, the rest shuffled.
+    saveNow();
+    restart();
   });
   $('check').addEventListener('click', () => checkUpdate(true));
 

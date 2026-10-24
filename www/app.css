@@ -216,3 +216,5 @@ body.locked { overflow: hidden; }
 .answer p { margin: 0 0 8px; }
 .card .row .show { padding: 8px 18px; }
 .answer-h { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 6px; }
+.exam-soon { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.exam-soon .primary { padding: 8px 18px; }
