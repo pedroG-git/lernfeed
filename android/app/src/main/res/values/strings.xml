@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Lernfeed</string>
+    <string name="title_activity_main">Lernfeed</string>
+    <string name="package_name">io.github.pedrog_git.lernfeed</string>
+    <string name="custom_url_scheme">io.github.pedrog_git.lernfeed</string>
+</resources>

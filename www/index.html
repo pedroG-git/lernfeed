@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f4f5f7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#16181c" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="data:,">
+  <title>Lernfeed</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <header id="top">
+    <h1>Lernfeed</h1>
+    <select id="klasse" aria-label="Klasse"><option value="">Alle Klassen</option></select>
+    <button id="openSettings" class="icon" aria-label="Einstellungen">
+      <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M19.4 13a7.7 7.7 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.6 7.6 0 0 0-1.7-1L15 3.3h-4l-.4 2.6a7.6 7.6 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.7 7.7 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1c.5.4 1.1.7 1.7 1l.4 2.6h4l.4-2.6c.6-.3 1.2-.6 1.7-1l2.5 1 2-3.5L19.4 13ZM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z" transform="translate(-1 0)"/></svg>
+    </button>
+  </header>
+
+  <div id="update" class="banner" hidden>
+    <span id="updateText">Neue App-Version verfügbar</span>
+    <button id="updateBtn">Laden</button>
+  </div>
+  <div id="status" class="banner muted" hidden></div>
+
+  <main id="feed"></main>
+  <div id="more" class="muted center" hidden>Lade mehr…</div>
+
+  <div id="empty" class="empty" hidden>
+    <h2>Noch keine Inhalte</h2>
+    <p>Öffne die Einstellungen, füge den GitHub-Token ein und tippe auf <b>Inhalte laden</b>.</p>
+    <button id="emptySettings" class="primary">Einstellungen</button>
+  </div>
+
+  <section id="settings" class="sheet" hidden>
+    <div class="sheet-head">
+      <h2>Einstellungen</h2>
+      <button id="closeSettings" class="text">Fertig</button>
+    </div>
+
+    <h3>Inhalte</h3>
+    <p class="muted" id="syncInfo">Noch nie geladen.</p>
+    <button id="syncBtn" class="primary">Inhalte laden</button>
+    <p class="muted small" id="syncStep"></p>
+
+    <h3>GitHub-Token</h3>
+    <p class="muted small">Nur Leserechte auf das Inhalte-Repo. Wird nur auf diesem Handy gespeichert.</p>
+    <input id="token" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="github_pat_…">
+    <button id="saveToken">Token speichern</button>
+
+    <h3>Fortschritt</h3>
+    <p class="muted small" id="progressInfo"></p>
+    <button id="reset" class="danger">Fortschritt zurücksetzen</button>
+    <div id="resetConfirm" hidden>
+      <p class="small">Wirklich alles zurücksetzen? Alle Beiträge gelten dann wieder als neu.</p>
+      <button id="resetYes" class="danger">Ja, zurücksetzen</button>
+      <button id="resetNo">Abbrechen</button>
+    </div>
+
+    <h3>App</h3>
+    <p class="muted small"><span id="version"></span> · <button id="check" class="link">Nach Updates suchen</button></p>
+  </section>
+
+  <script src="version.js"></script>
+  <script src="mix.js"></script>
+  <script src="store.js"></script>
+  <script src="sync.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

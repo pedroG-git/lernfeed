@@ -1,0 +1,79 @@
+# Builds the signed APK and publishes it as a GitHub Release whenever a version tag (v1.2.3) is pushed.
+name: Release APK
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Check tag matches package.json
+        run: |
+          V=$(node -p "require('./package.json').version")
+          [ "v$V" = "$GITHUB_REF_NAME" ] || { echo "Tag $GITHUB_REF_NAME does not match package.json version $V"; exit 1; }
+          echo "VERSION=$V" >> "$GITHUB_ENV"
+          IFS=. read -r MA MI PA <<< "$V"
+          echo "VERSION_CODE=$((MA * 10000 + MI * 100 + PA))" >> "$GITHUB_ENV"
+
+      - run: npm ci
+      - run: npm test
+      - run: npm run sync
+
+      - name: Build signed APK
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/release.p12"
+          export KEYSTORE_FILE="$RUNNER_TEMP/release.p12"
+          cd android
+          ./gradlew assembleRelease --no-daemon -PappVersionCode=$VERSION_CODE -PappVersionName=$VERSION
+          APK=app/build/outputs/apk/release/app-release.apk
+          "$ANDROID_HOME"/build-tools/$(ls "$ANDROID_HOME"/build-tools | sort -V | tail -1)/apksigner verify --print-certs "$APK"
+          cp "$APK" "$GITHUB_WORKSPACE/lernfeed.apk"
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" lernfeed.apk --title "Lernfeed $VERSION" --notes "Download lernfeed.apk on the phone and open it to install or update."
+
+      # Apps that saw an older "update ready" banner download that older release's APK.
+      # Putting the newest APK on the recent releases too means every update link installs the newest version in one go.
+      - name: Put the newest APK on older releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for tag in $(gh release list -L 30 --json tagName -q '.[].tagName' | grep -vx "$GITHUB_REF_NAME"); do
+            gh release upload "$tag" lernfeed.apk --clobber || echo "skipped $tag"
+          done
+
+      # Only now tell the apps (via GitHub Pages) that this version exists, so the download is always there.
+      - name: Announce version on GitHub Pages
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main && git checkout -B main origin/main
+          echo "{\"version\":\"$VERSION\"}" > docs/version.json
+          git add docs/version.json
+          git diff --cached --quiet && exit 0
+          git commit -m "version.json $VERSION"
+          for i in 1 2 3; do git push origin main && exit 0; git pull --rebase origin main; done
+          exit 1
