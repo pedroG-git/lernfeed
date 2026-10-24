@@ -407,7 +407,7 @@
     byId = Object.fromEntries(posts.map((p) => [p.id, p]));
     const sel = $('klasse');
     const classes = [...new Set(posts.map((p) => p.klasse))].sort();
-    sel.innerHTML = '<option value="">Alle Klassen</option>' + classes.map((k) => `<option>${esc(k)}</option>`).join('');
+    sel.innerHTML = '<option value="">Alle</option>' + classes.map((k) => `<option>${esc(k)}</option>`).join('');
     if (!classes.includes(settings.klasse)) settings.klasse = '';
     sel.value = settings.klasse;
     updateBadge();
@@ -516,7 +516,15 @@
       if (manual) $('check').textContent = 'Konnte nicht prüfen';
     }
   }
-  $('updateBtn').addEventListener('click', () => (location.href = SITE));
+  // Opens the APK download in the phone's browser; Android then offers to install it.
+  const APK = 'https://github.com/pedroG-git/lernfeed/releases/latest/download/lernfeed.apk';
+  $('updateBtn').addEventListener('click', () => (location.href = APK));
+  // Header button: new content + new app version in one tap.
+  $('refresh').addEventListener('click', async () => {
+    $('refresh').classList.add('spin');
+    await Promise.all([doSync(true), checkUpdate(false)]);
+    $('refresh').classList.remove('spin');
+  });
   $('check').addEventListener('click', () => checkUpdate(true));
 
   // ---------- start ----------

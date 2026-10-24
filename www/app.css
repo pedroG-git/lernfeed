@@ -43,13 +43,13 @@ button { cursor: pointer; }
 
 header {
   position: sticky; top: 0; z-index: 5;
-  display: flex; align-items: center; gap: 10px;
+  display: flex; align-items: center; gap: 4px;
   padding: calc(10px + env(safe-area-inset-top)) 14px 10px;
   background: var(--bg);
   border-bottom: 1px solid var(--line);
 }
-header h1 { font-size: 20px; margin: 0; flex: 1; white-space: nowrap; }
-header h1 small { font-size: 12px; font-weight: 500; color: var(--muted); margin-left: 4px; }
+header h1 { font-size: 20px; line-height: 1.1; margin: 0; flex: 1; white-space: nowrap; }
+header h1 small { display: block; font-size: 12px; font-weight: 500; color: var(--muted); }
 .icon { position: relative; }
 .badge {
   position: absolute; top: 0; right: -2px; min-width: 17px; height: 17px; padding: 0 4px;
@@ -57,7 +57,7 @@ header h1 small { font-size: 12px; font-weight: 500; color: var(--muted); margin
 }
 .badge[hidden] { display: none; }
 header select {
-  max-width: 45vw;
+  max-width: 36vw;
   padding: 6px 10px; border-radius: 999px;
   border: 1px solid var(--line); background: var(--card);
 }
@@ -200,3 +200,6 @@ body.locked { overflow: hidden; }
 .viewer:has(img.zoom) { display: block; }
 .viewer .cap { color: #ddd; font-size: 14px; padding: 10px 16px; }
 .viewer .hint-zoom { color: #888; font-size: 12px; padding-bottom: 16px; }
+
+.spin svg { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }

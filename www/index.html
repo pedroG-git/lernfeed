@@ -12,7 +12,10 @@
 <body>
   <header id="top">
     <h1 id="title">Lernfeed <small id="today"></small></h1>
-    <select id="klasse" aria-label="Klasse"><option value="">Alle Klassen</option></select>
+    <select id="klasse" aria-label="Klasse"><option value="">Alle</option></select>
+    <button id="refresh" class="icon" aria-label="Aktualisieren">
+      <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 4a8 8 0 0 1 7.4 5H17v2h6V5h-2v2.3A10 10 0 0 0 2 12h2a8 8 0 0 1 8-8Zm8 8a8 8 0 0 1-15.4 3H7v-2H1v6h2v-2.3A10 10 0 0 0 22 12h-2Z"/></svg>
+    </button>
     <button id="openList" class="icon" aria-label="Lernliste">
       <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1Zm1 2v12.6l5-2.9 5 2.9V5H7Z"/></svg>
       <span id="badge" class="badge" hidden></span>
